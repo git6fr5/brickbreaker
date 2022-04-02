@@ -30,7 +30,7 @@ public class Weapon : MonoBehaviour {
     [SerializeField] private Transform firePoint;
 
     // Projectile.
-    [SerializeField] private Projectile projectile;
+    [SerializeField] public Projectile projectile;
 
     #endregion
 

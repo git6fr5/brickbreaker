@@ -29,7 +29,19 @@ public class Screen : MonoBehaviour {
 
     // Post Processing.
     [SerializeField] public Volume volume;
-    [SerializeField] public VolumeProfile volumeProfile;
+    [SerializeField] public VolumeProfile baseProfile;
+    [SerializeField] public VolumeProfile hurtProfile;
+    [SerializeField] public VolumeProfile deathProfile;
+    private ColorAdjustments deathColAdjust;
+
+    [SerializeField] public VolumeProfile winProfile;
+    private ColorAdjustments winColAdjust;
+
+    [SerializeField] public VolumeProfile pauseProfile;
+    private ColorAdjustments pauseColAdjust;
+    private Vignette pauseVignette;
+    public AnimationCurve pauseCurve;
+    private Vignette hurtVignette;
 
     [Header("Shake")]
     [SerializeField] private AnimationCurve curve;
@@ -56,6 +68,32 @@ public class Screen : MonoBehaviour {
         if (shake) {
             shake = Shake();
         }
+        SetProfile();
+    }
+
+    private void SetProfile() {
+        if (GameRules.Paused) {
+            volume.sharedProfile = pauseProfile;
+            pauseColAdjust.saturation.value = -100f * (1f-pauseCurve.Evaluate(GameRules.PauseCharge));
+            pauseVignette.intensity.value = 0.25f * (1f - pauseCurve.Evaluate(GameRules.PauseCharge));
+        }
+        else {
+            if (GameRules.MainPlayer == null) {
+                volume.sharedProfile = deathProfile;
+                deathColAdjust.postExposure.value = 10f * pauseCurve.Evaluate(GameRules.DeathCharge);
+            }
+            else if (GameRules.WinCharge > 0f) {
+                volume.sharedProfile = winProfile;
+                winColAdjust.postExposure.value = 10f * pauseCurve.Evaluate(GameRules.WinCharge);
+            }
+            else if (GameRules.MainPlayer.Health <= 1) {
+                volume.sharedProfile = hurtProfile;
+                hurtVignette.intensity.value = 0.475f + 0.0125f * Mathf.Sin(GameRules.Ticks);
+            }
+            else {
+                volume.sharedProfile = baseProfile;
+            }
+        }
     }
 
     #endregion
@@ -70,6 +108,13 @@ public class Screen : MonoBehaviour {
         origin = transform.position;
         screenSize = new Vector2(pixelPerfectCamera.refResolutionX, pixelPerfectCamera.refResolutionY) / pixelPerfectCamera.assetsPPU;
         Instance = this;
+
+        pauseProfile.TryGet<ColorAdjustments>(out pauseColAdjust);
+        pauseProfile.TryGet<Vignette>(out pauseVignette);
+        hurtProfile.TryGet<Vignette>(out hurtVignette);
+        deathProfile.TryGet<ColorAdjustments>(out deathColAdjust);
+        winProfile.TryGet<ColorAdjustments>(out winColAdjust);
+
     }
 
     #endregion

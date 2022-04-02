@@ -14,8 +14,8 @@ public class Block : MonoBehaviour {
     [HideInInspector] public Rigidbody2D body;
 
     // Health.
-    [SerializeField] private int maxHealth;
-    [SerializeField, ReadOnly] private int health;
+    [SerializeField] protected int maxHealth;
+    [SerializeField, ReadOnly] protected int health;
 
     // Movement.
     [SerializeField] private float resistance = 0.985f;
@@ -64,7 +64,7 @@ public class Block : MonoBehaviour {
         }
     }
 
-    private void CheckHealth() {
+    protected virtual void CheckHealth() {
         if (health <= 0) {
             Destroy(gameObject);
             return;

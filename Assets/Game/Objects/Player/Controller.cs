@@ -29,8 +29,8 @@ public class Controller : MonoBehaviour {
 
     // Health.
     [Space(2), Header("Health")]
-    [SerializeField] public float health;
-    [SerializeField] public float maxHealth;
+    [SerializeField] public int health;
+    [SerializeField] public int maxHealth;
 
     // Movement.
     [Space(2), Header("Movement")]

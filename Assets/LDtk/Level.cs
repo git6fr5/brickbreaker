@@ -13,6 +13,9 @@ public class Level : MonoBehaviour {
 
     public List<Entity> entities;
 
+    // Maps.
+    [SerializeField] public Tilemap groundMap;
+
     public Vector3 GridToWorldPosition(Vector2Int gridPosition) {
         return new Vector3(gridPosition.x + 0.5f, - gridPosition.y + 0.5f, 0f) + transform.position;
     }

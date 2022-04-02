@@ -17,7 +17,9 @@ public class LevelLoader : MonoBehaviour {
 
     /* --- Static Variables --- */
     // Layer Names
-    public static string GhostLayer = "Ghost";
+    public static string EntityLayer = "Entities";
+    public static string LayoutLayer = "Layout";
+    public static string LevelTag = "World_Level_";
 
     /* --- Data Structures --- */
     public class LDtkTileData {
@@ -54,12 +56,9 @@ public class LevelLoader : MonoBehaviour {
         }
     }
 
-    public AudioSource audioSource;
     public void Load() {
-        audioSource.Play();
         ResetLevel(level);
         OpenLevel(id);
-        GameRules.Init();
     }
 
     /* --- Methods --- */
@@ -72,24 +71,20 @@ public class LevelLoader : MonoBehaviour {
 
         // Get the json file from the LDtk Data.
         LdtkJson json = lDtkData.FromJson();
+        print(json);
 
         // Read the json data.
         level.gridSize = (int)json.DefaultGridSize;
         level.height = (int)(json.DefaultLevelHeight / json.DefaultGridSize);
         level.width = (int)(json.DefaultLevelWidth / json.DefaultGridSize);
 
-        int intId = 0;
-        for (int i = 0; i < json.Levels.Length; i++) {
-            if (json.Levels[i].Identifier == "Level_" + id.ToString()) {
-                return json.Levels[i];
+        LDtkUnity.Level[] levels = json.Worlds[0].Levels;
+        for (int i = 0; i < levels.Length; i++) {
+            if (levels[i].Identifier == LevelTag + id.ToString()) {
+                return levels[i];
             }
         }
 
-        
-        //// Grab the level by the id.
-        //if (id < json.Levels.Length && id >= 0) {
-        //    return json.Levels[id];
-        //}
         Debug.Log("Could not find room");
         return null;
     }
@@ -99,19 +94,16 @@ public class LevelLoader : MonoBehaviour {
         if (ldtkLevel != null) {
             // Load the entity data.
             int gridSize = level.gridSize;
-            List<LDtkTileData> entityData = LoadLayer(ldtkLevel, GhostLayer, gridSize);
+
+            List<LDtkTileData> entityData = LoadLayer(ldtkLevel, EntityLayer, gridSize);
             List<Entity> entityList = level.environment.entities;
             level.entities = LoadEntities(entityData, entityList);
-            Order(ref level.entities, ldtkLevel);
+
         }
 
     }
 
     private void ResetLevel(Level level) {
-
-        if (GameRules.MainPlayer != null) {
-            Destroy(GameRules.MainPlayer.corpse.gameObject);
-        }
 
         if (level.entities != null) {
             print("Resetting Entities");
@@ -187,40 +179,6 @@ public class LevelLoader : MonoBehaviour {
             }
         }
         return entities;
-    }
-
-    private void Order(ref List<Entity> entities, LDtkLevel ldtkLevel) {
-
-        List<LDtkTileData> orderData = LoadLayer(ldtkLevel, "Controls", 16);
-
-        Pole[] poles = new Pole[6];
-
-        for (int i = 0; i < entities.Count; i++) {
-            if (entities[i].GetComponent<Pole>() != null) {
-
-                Pole pole = entities[i].GetComponent<Pole>();
-                int id = -1;
-                for (int j = 0; j < orderData.Count; j++) {
-                    if (orderData[j].gridPosition == entities[i].gridPosition) {
-                        id = orderData[j].vectorID.x;
-                    }
-                }
-
-                if (id != -1 && id < 6) {
-                    poles[id] = pole;
-                }
-
-            }
-        }
-
-        for (int i = 0; i < poles.Length; i+=2) {
-            if (poles[i] != null && poles[i + 1] != null) {
-                poles[i].Connect(poles[i + 1]);
-                poles[i + 1].Connect(poles[i]);
-            }
-        }
-
-
     }
 
 }

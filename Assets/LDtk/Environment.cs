@@ -15,54 +15,14 @@ public class Environment : MonoBehaviour {
 
     /* --- Properties --- */
     [SerializeField, ReadOnly] public List<Entity> entities; // The set of entities found from the parent transform.
-
-    [SerializeField] public AudioSource aliveMusic;
-    public static AudioSource AliveMusic;
-
-    [SerializeField] public AudioSource deadMusic;
-    public static AudioSource DeadMusic;
-
-
-    [SerializeField] public AudioSource ambience;
+    
+    // Tiles.
+    [SerializeField] public RuleTile ground;
 
     /* --- Unity --- */
     // Runs once before the first frame.
     void Start() {
         RefreshEntities();
-
-        AliveMusic = aliveMusic;
-        DeadMusic = deadMusic;
-
-    }
-
-    public AnimationCurve musicCurve;
-    public AnimationCurve panCurve;
-
-    void Update() {
-
-        if (GameRules.MainPlayer != null && !GameRules.MainPlayer.Alive) {
-            AliveMusic.volume = 0.2f * musicCurve.Evaluate(GameRules.MainPlayer.RespawnRatio);
-            DeadMusic.volume = 0.25f - 0.25f * musicCurve.Evaluate(GameRules.MainPlayer.RespawnRatio);
-            // DeadMusic.panStereo = 0.5f * panCurve.Evaluate(GameRules.MainPlayer.RespawnRatio);
-        }
-        else {
-            AliveMusic.volume = 0.2f;
-        }
-
-    }
-
-    public static void SwitchMusic(bool alive) {
-
-        DeadMusic.gameObject.SetActive(!alive);
-
-        if (alive) {
-            // AliveMusic.timeSamples = DeadMusic.timeSamples;
-        }
-        else {
-            DeadMusic.timeSamples = 0; // AliveMusic.timeSamples;
-            AliveMusic.timeSamples = 0;
-        }
-
     }
 
     /* --- Entity Methods --- */

@@ -104,6 +104,11 @@ public class Controller : MonoBehaviour {
         Debug(deltaTime);
     }
 
+    void OnCollisionEnter2D(Collision2D collision) {
+        Collider2D collider = collision.collider;
+        ProcessCollision(collider);
+    }
+
     #endregion
 
     /* --- Initialization --- */
@@ -180,18 +185,52 @@ public class Controller : MonoBehaviour {
         }
     }
 
+    /* --- Collision --- */
+    #region Collision
+
+    private void ProcessCollision(Collider2D collider) {
+        if (hurt) {
+            return;
+        }
+        if (collider.GetComponent<Projectile>() || collider.GetComponent<Enemy>()) {
+            Screen.CameraShake(0.25f, HurtBuffer);
+            health -= 1;
+            hurt = true;
+
+            Rigidbody2D projectileBody = collider.GetComponent<Rigidbody2D>();
+            Knock(projectileBody.velocity.normalized, 15f, HurtBuffer / 4f);
+
+            CheckHealth();
+            Destroy(collider.gameObject);
+        }
+    }
+
+    protected virtual void CheckHealth() {
+        if (health <= 0) {
+            Destroy(gameObject);
+            return;
+        }
+        StartCoroutine(IEFlicker(GameRules.FlickerRate));
+    }
+
+    #endregion
+
     public void Knock(Vector2 direction, float force, float duration) {
         knocked = true;
         knockDuration = duration;
-        body.velocity = direction * force;
+        transform.eulerAngles = new Vector3(0f, 0f, Vector2.SignedAngle(Vector2.down, direction));
+        body.velocity = Vector2.down * force;
     }
 
-    public void Hurt(float damage) {
-        if (!hurt) {
-            health -= damage;
-            hurt = true;
-            hurtTicks = 0f;
+    private IEnumerator IEFlicker(float interval) {
+        int flicks = (int)Mathf.Floor(HurtBuffer / interval);
+        for (int i = 0; i < flicks; i++) {
+            spriteRenderer.enabled = !spriteRenderer.enabled;
+            if (!hurt) { break; }
+            yield return new WaitForSeconds(interval);
         }
+        spriteRenderer.enabled = true;
+        yield return null;
     }
 
     #endregion

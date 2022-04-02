@@ -29,6 +29,8 @@ public class GameRules : MonoBehaviour {
     public static float GravityScale = 0f;
     // Animation.
     public static float FrameRate = 24f;
+    public static float FlickerRate = 0.075f;
+
     // Ticks.
     public static float Ticks;
 

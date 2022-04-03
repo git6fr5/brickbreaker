@@ -20,6 +20,8 @@ public class Block : MonoBehaviour {
     // Movement.
     [SerializeField] private float resistance = 0.985f;
 
+    public AudioClip breakSound;
+
     #endregion
 
     /* --- Unity --- */
@@ -57,7 +59,9 @@ public class Block : MonoBehaviour {
     #region Collision
 
     private void ProcessCollision(Collider2D collider) {
+
         if (collider.GetComponent<Projectile>()) {
+            GameRules.PlaySound(breakSound, 2);
             body.isKinematic = false;
             health -= 1;
             CheckHealth();

@@ -26,6 +26,7 @@ public class Controller : MonoBehaviour {
     [HideInInspector] public SpriteRenderer spriteRenderer;
     [HideInInspector] public Rigidbody2D body;
     [HideInInspector] public BoxCollider2D hurtbox;
+    [HideInInspector] public AudioSource audioSource;
 
     // Health.
     [Space(2), Header("Health")]
@@ -65,11 +66,14 @@ public class Controller : MonoBehaviour {
     [SerializeField, ReadOnly] public bool hover = false;
     [SerializeField, ReadOnly] public bool active = false;
 
-
     // Debug.
     [Space(2), Header("Debug")]
     [SerializeField, ReadOnly] protected float debugSpeed;
     [HideInInspector] protected Vector3 previousPosition;
+
+    // Sounds.
+    [SerializeField] public AudioClip hurtSound;
+    [SerializeField] public AudioClip deathSound;
 
     #endregion
 
@@ -119,6 +123,8 @@ public class Controller : MonoBehaviour {
         // Caching components.
         body = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
+
         direction = Vector2.down;
         health = maxHealth;
         ResetBody(body);
@@ -192,7 +198,9 @@ public class Controller : MonoBehaviour {
         if (hurt) {
             return;
         }
-        if (collider.GetComponent<Projectile>() || collider.GetComponent<Enemy>()) {
+        if (collider.GetComponent<Projectile>() != null || collider.GetComponent<Enemy>() != null) {
+            GameRules.PlaySound(hurtSound, audioSource);
+
             Screen.CameraShake(0.25f, HurtBuffer);
             health -= 1;
             hurt = true;
@@ -201,12 +209,15 @@ public class Controller : MonoBehaviour {
             Knock(projectileBody.velocity.normalized, 15f, HurtBuffer / 4f);
 
             CheckHealth();
-            Destroy(collider.gameObject);
+            if (collider.GetComponent<Projectile>() != null) {
+                Destroy(collider.gameObject);
+            }
         }
     }
 
     protected virtual void CheckHealth() {
         if (health <= 0) {
+            GameRules.PlaySound(deathSound);
             Destroy(gameObject);
             return;
         }

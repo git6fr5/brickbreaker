@@ -33,6 +33,10 @@ public class Enemy : MonoBehaviour {
     [SerializeField] protected float angleOffset = 7.5f;
     [SerializeField, ReadOnly] protected float cooldown;
 
+    public AudioClip hitSound;
+    public AudioClip hitWallSound;
+    public AudioClip hurtSound;
+
     #endregion
 
     /* --- Unity --- */
@@ -124,7 +128,11 @@ public class Enemy : MonoBehaviour {
     }
 
     private void ProcessCollision(Collider2D collider) {
-        if (collider.GetComponent<Projectile>()) {
+        if (hurt) {
+            return;
+        }
+
+        if (collider.GetComponent<Projectile>() != null) {
             Screen.CameraShake(0.125f, HurtBuffer);
             
             health -= 1;
@@ -135,6 +143,12 @@ public class Enemy : MonoBehaviour {
 
             CheckHealth();
             Destroy(collider.gameObject);
+        }
+        else if (collider.GetComponent<WallBlock>() != null) {
+            GameRules.PlaySound(hitWallSound, GetComponent<AudioSource>());
+        }
+        else {
+            GameRules.PlaySound(hitSound, GetComponent<AudioSource>());
         }
     }
 
@@ -151,6 +165,7 @@ public class Enemy : MonoBehaviour {
 
     protected virtual void CheckHealth() {
         if (health <= 0) {
+            GameRules.PlaySound(hurtSound);
             Destroy(gameObject);
             return;
         }

@@ -21,6 +21,8 @@ public class Projectile : MonoBehaviour {
     public float flatSpeed = 3f;
     public float resistance = 0.985f;
 
+    public AudioClip hitSound;
+
     #endregion
 
     /* --- Unity --- */
@@ -31,6 +33,10 @@ public class Projectile : MonoBehaviour {
         if (body.velocity.sqrMagnitude > flatSpeed * flatSpeed) {
             body.velocity *= resistance;
         }
+    }
+
+    void OnCollisionEnter2D(Collision2D collision) {
+        GameRules.PlaySound(hitSound, GetComponent<AudioSource>());
     }
 
     #endregion

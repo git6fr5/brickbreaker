@@ -14,6 +14,7 @@ public class Weapon : MonoBehaviour {
 
     // Components.
     [HideInInspector] protected SpriteRenderer spriteRenderer;
+    [HideInInspector] protected AudioSource audioSource;
 
     // User.
     [SerializeField] private Controller user;
@@ -31,6 +32,9 @@ public class Weapon : MonoBehaviour {
 
     // Projectile.
     [SerializeField] public Projectile projectile;
+
+    // Sounds.
+    [SerializeField] public AudioClip fireSound;
 
     #endregion
 
@@ -53,6 +57,7 @@ public class Weapon : MonoBehaviour {
 
     private void Init() {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     #endregion
@@ -63,6 +68,7 @@ public class Weapon : MonoBehaviour {
         if (cooldown > 0f) {
             return;
         }
+        GameRules.PlaySound(fireSound, audioSource);
         projectile.Fire(firePoint.position, direction, fireSpeed);
         cooldown = fireCooldown;
     }

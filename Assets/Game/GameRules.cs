@@ -45,14 +45,15 @@ public class GameRules : MonoBehaviour {
 
     [SerializeField] private float movementPrecision = 0.05f;
     [SerializeField] private float timeScale = 1f;
-    
+
     private bool paused;
     public static bool Paused => Instance.paused;
 
     private float pausecharge = 0f;
     public static float PauseCharge => Instance.pausecharge;
 
-    public static bool Dead => MainPlayer == null;
+    public bool dead;
+    public static bool Dead => Instance.dead;
     private float deathCharge;
     public static float DeathCharge => Instance.deathCharge;
 
@@ -60,62 +61,29 @@ public class GameRules : MonoBehaviour {
     private float winCharge;
     public static float WinCharge => Instance.winCharge;
 
+    public AudioClip loseSound;
+    public AudioClip winSound;
+
     #endregion
 
     /* --- Unity --- */
     #region Unity
 
-    void Start() {
-        Init();
-    }
-
     private void Update() {
-        SetRules();
+        if (Instance == null) {
+            Init();
+            return;
+        }
+        CheckPlayer();
+        CheckPause();
+        Time.timeScale = timeScale;
     }
 
     private void FixedUpdate() {
         float deltaTime = Time.fixedDeltaTime;
         Ticks += deltaTime;
-        print(Time.fixedDeltaTime);
         CheckWin(deltaTime);
-        if (win) { return; }
         CheckLose(deltaTime);
-    }
-
-    private void CheckWin(float deltaTime) {
-        Enemy[] enemies = (Enemy[])GameObject.FindObjectsOfType(typeof(Enemy));
-        win = enemies == null || enemies.Length == 0;
-        if (win) {
-            if (winCharge == 0f) {
-                Screen.CameraShake(0.25f, 1f);
-            }
-            winCharge += Time.fixedDeltaTime;
-        }
-        else {
-            winCharge = 0f;
-        }
-
-        if (winCharge > 1.25f) {
-            Win();
-            winCharge = 0f;
-        }
-    }
-
-    private void CheckLose(float deltaTime) {
-        if (Dead) {
-            if (deathCharge == 0f) {
-                Screen.CameraShake(0.25f, 1f);
-            }
-            deathCharge += Time.fixedDeltaTime;
-        }
-        else {
-            deathCharge = 0f;
-        }
-
-        if (deathCharge > 1.25f) {
-            Lose();
-            deathCharge = 0f;
-        }
     }
 
     #endregion
@@ -124,36 +92,9 @@ public class GameRules : MonoBehaviour {
     #region Initialization
 
     private void Init() {
-        SetRules();
-    }
-
-    private void SetRules() {
-        // Set these static variables.
-        Player[] players = (Player[])GameObject.FindObjectsOfType(typeof(Player));
-        if (players == null || players.Length == 0) {
-            mainPlayer = null;
-        }
-        else {
-            mainPlayer = players[0];
-        }
-        Time.timeScale = timeScale;
-
-        // Instance
         Instance = this;
-
-        if (paused && Input.GetMouseButton(0)) {
-            pausecharge += 0.05f;
-        }
-        else {
-            pausecharge = 0f;
-        }
-
-        if (pausecharge > 1f) {
-            Screen.CameraShake(0.25f, 1f);
-            timeScale = 1f;
-            paused = false;
-        }
-
+        mainLoader.Load();
+        Pause();
     }
 
     #endregion
@@ -161,49 +102,132 @@ public class GameRules : MonoBehaviour {
     /* --- Generics --- */
     #region Generics
 
-    public static List<T> GetAllWithinRadius<T>(Vector3 origin, float radius) {
-        List<T> list = new List<T>();
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(origin, radius);
-        for (int i = 0; i < colliders.Length; i++) {
-            if (colliders[i].GetComponent<T>() != null) {
-                list.Add(colliders[i].GetComponent<T>());
-            }
+    private void CheckPlayer() {
+        Player[] players = (Player[])GameObject.FindObjectsOfType(typeof(Player));
+        if (players == null || players.Length == 0) {
+            mainPlayer = null;
         }
-        return list;
+        else {
+            mainPlayer = players[0];
+        }
+    }
+
+    private void CheckPause() {
+        pausecharge = paused && Input.GetMouseButton(0) ? pausecharge + 0.05f : 0f;
+
+        if (pausecharge > 1f) {
+            Screen.CameraShake(0.25f, 1f);
+            timeScale = 1f;
+            paused = false;
+        }
+    }
+
+    private void CheckWin(float deltaTime) {
+        Enemy[] enemies = (Enemy[])GameObject.FindObjectsOfType(typeof(Enemy));
+        win = enemies == null || enemies.Length == 0;
+
+        if (win && winCharge == 0f) {
+            PlaySound(winSound);
+            Screen.CameraShake(0.25f, 1f); 
+        }
+        winCharge = win ? winCharge + deltaTime / 1.75f : 0f;
+
+        if (winCharge > 1.05f) {
+            Win();
+            winCharge = 0f;
+        }
+    }
+
+    private void CheckLose(float deltaTime) {
+        if (win) { return; }
+        dead = MainPlayer == null;
+
+        if (dead && deathCharge == 0f) {
+            PlaySound(loseSound);
+            Screen.CameraShake(0.25f, 1f); 
+        }
+        deathCharge = dead ? deathCharge + deltaTime / 1.75f : 0f;
+
+        if (deathCharge > 1.05f) {
+            Lose();
+            deathCharge = 0f;
+        }
     }
 
     public void Lose() {
-        if (MainLoader != null) {
-            Projectile[] projectiles = (Projectile[])GameObject.FindObjectsOfType(typeof(Projectile));
-            for (int i = 0; i < projectiles.Length; i++) {
-                Destroy(projectiles[i].gameObject);
-            }
-            MainLoader.Load();
-            Pause(3f);
-        }
+        ClearProjectiles();
+        mainLoader.Load();
+        Pause();
     }
 
     public void Win() {
-        if (MainLoader != null) {
-            Projectile[] projectiles = (Projectile[])GameObject.FindObjectsOfType(typeof(Projectile));
-            for (int i = 0; i < projectiles.Length; i++) {
-                Destroy(projectiles[i].gameObject);
-            }
-
-            if (MainLoader.GetLevelByID(MainLoader.lDtkData, MainLoader.id + 1) != null) {
-                MainLoader.id += 1;
-                MainLoader.Load();
-                Pause(3f);
-            }
-            else {
-                SceneManager.LoadScene("End");
-            }
+        ClearProjectiles();
+        if (mainLoader.GetLevelByID(MainLoader.lDtkData, MainLoader.id + 1) != null) {
+            mainLoader.id += 1;
+            mainLoader.Load();
+            Pause();
+        }
+        else {
+            SceneManager.LoadScene("End");
         }
     }
 
-    public void Pause(float duration) {
+    public void Pause() {
         timeScale = 0f;
         paused = true;
+    }
+
+    private static void ClearProjectiles() {
+        Projectile[] projectiles = (Projectile[])GameObject.FindObjectsOfType(typeof(Projectile));
+        for (int i = 0; i < projectiles.Length; i++) {
+            Destroy(projectiles[i].gameObject);
+        }
+        Enemy[] enemies = (Enemy[])GameObject.FindObjectsOfType(typeof(Enemy));
+        for (int i = 0; i < enemies.Length; i++) {
+            Destroy(enemies[i].gameObject);
+        }
+    }
+
+    public static void PlaySound(AudioClip audioClip, AudioSource audioSource, bool _override = false) {
+        if (audioSource.clip == audioClip && audioSource.isPlaying && !_override) {
+            return;
+        }
+        audioSource.clip = audioClip;
+        if (audioSource.isPlaying) {
+            audioSource.Stop();
+        }
+        audioSource.Play();
+    }
+
+    public static void PlaySound(AudioClip audioClip, int index = 1, bool _override = false) {
+        AudioSource audioSource = Instance.GetComponent<AudioSource>();
+        if (audioSource.isPlaying) {
+            index = 2;
+        }
+
+        if (index == 2) {
+
+            bool foundAudioSource = false;
+            foreach (Transform child in Instance.transform) {
+                if (child.GetComponent<AudioSource>() != null && !child.GetComponent<AudioSource>().isPlaying) {
+                    audioSource = child.GetComponent<AudioSource>();
+                    foundAudioSource = true;
+                }
+            }
+            if (!foundAudioSource) {
+                return;
+            }
+
+        }
+
+        if (audioSource.clip == audioClip && audioSource.isPlaying && !_override) {
+            return;
+        }
+        audioSource.clip = audioClip;
+        if (audioSource.isPlaying) {
+            audioSource.Stop();
+        }
+        audioSource.Play();
     }
 
     #endregion

@@ -53,6 +53,10 @@ public class Screen : MonoBehaviour {
     // Callbacks.
     public static Vector2 ScreenSize => Instance.screenSize;
 
+    public GameObject instructions;
+    public GameObject lose;
+    public GameObject win;
+
     #endregion
 
     /* --- Unity --- */
@@ -72,19 +76,34 @@ public class Screen : MonoBehaviour {
     }
 
     private void SetProfile() {
+
+        
+
         if (GameRules.Paused) {
+            win.SetActive(false);
+            lose.SetActive(false);
+
             volume.sharedProfile = pauseProfile;
             pauseColAdjust.saturation.value = -100f * (1f-pauseCurve.Evaluate(GameRules.PauseCharge));
-            pauseVignette.intensity.value = 0.25f * (1f - pauseCurve.Evaluate(GameRules.PauseCharge));
+            pauseVignette.intensity.value = 0.15f * (1f - pauseCurve.Evaluate(GameRules.PauseCharge));
+            instructions.SetActive(true);
         }
         else {
-            if (GameRules.MainPlayer == null) {
+            if (instructions.activeSelf) { instructions.SetActive(false); }
+
+            bool winning = GameRules.WinCharge > 0f;
+            win.SetActive(winning);
+
+            bool losing = GameRules.MainPlayer == null;
+            lose.SetActive(losing);
+
+            if (losing) {
                 volume.sharedProfile = deathProfile;
-                deathColAdjust.postExposure.value = 10f * pauseCurve.Evaluate(GameRules.DeathCharge);
+                deathColAdjust.postExposure.value = 4.5f * pauseCurve.Evaluate(GameRules.DeathCharge);
             }
-            else if (GameRules.WinCharge > 0f) {
+            else if (winning) {
                 volume.sharedProfile = winProfile;
-                winColAdjust.postExposure.value = 10f * pauseCurve.Evaluate(GameRules.WinCharge);
+                winColAdjust.postExposure.value = 4.5f * pauseCurve.Evaluate(GameRules.WinCharge);
             }
             else if (GameRules.MainPlayer.Health <= 1) {
                 volume.sharedProfile = hurtProfile;
@@ -123,6 +142,8 @@ public class Screen : MonoBehaviour {
     #region Shaking
 
     public bool Shake() {
+        if (GameRules.Paused) { return shake; }
+
         elapsedTime += Time.deltaTime;
         if (elapsedTime >= shakeDuration) {
             elapsedTime = 0f;

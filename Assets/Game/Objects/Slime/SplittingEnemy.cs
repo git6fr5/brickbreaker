@@ -15,7 +15,7 @@ public class SplittingEnemy : Enemy {
         gameObject.SetActive(true);
 
         body.AddForce(Random.insideUnitCircle.normalized * force);
-        transform.localScale = new Vector3(1f, 1f, 1f) * 2f / (float)depth;
+        transform.localScale = new Vector3(1f, 1f, 1f) * 2f / ((float)depth * 0.75f);
     }
 
     protected override void CheckHealth() {
@@ -24,6 +24,7 @@ public class SplittingEnemy : Enemy {
                 Split();
                 Split();
             }
+            GameRules.PlaySound(hurtSound);
             Destroy(gameObject);
             return;
         }
